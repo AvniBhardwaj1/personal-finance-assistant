@@ -96,14 +96,28 @@ def run(prompts, use_real=False):
             real_available = False
 
         if real_available:
+            import subprocess, shlex
             for p in prompts:
                 try:
-                    res = agent_executor.invoke({"input": p})
-                    # res may be dict with output or string
-                    if isinstance(res, dict):
-                        out = {'prompt': p, 'final_answer': res.get('output') or str(res)}
+                    # use ollama CLI to run the model for each prompt
+                    # prefer JSON output if model supports it; otherwise capture text
+                    cmd = f"ollama run my-finance-bot --format json {shlex.quote(p)}"
+                    proc = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=120)
+                    stdout = proc.stdout.strip()
+                    if stdout:
+                        # try parse json
+                        try:
+                            j = json.loads(stdout)
+                            # attempt to extract a sensible text field
+                            if isinstance(j, dict) and 'output' in j:
+                                text = j.get('output')
+                            else:
+                                text = stdout
+                        except Exception:
+                            text = stdout
                     else:
-                        out = {'prompt': p, 'final_answer': str(res)}
+                        text = proc.stderr.strip() or 'No output from model'
+                    out = {'prompt': p, 'final_answer': text}
                 except Exception as e:
                     out = {'prompt': p, 'final_answer': f'Agent error: {e}'}
                 rows.append(out)
@@ -167,5 +181,11 @@ def main(count=100):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--count', type=int, default=100)
+    parser.add_argument('--real', action='store_true', help='Attempt to run prompts through the real agent (Ollama)')
     args = parser.parse_args()
-    main(count=args.count)
+    # generate prompts and run
+    df = load_data()
+    prompts = generate_prompts(df, count=args.count)
+    rows = run(prompts, use_real=args.real)
+    summary = summarize(rows)
+    print('Summary:', summary)
