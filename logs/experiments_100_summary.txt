@@ -1,0 +1,10 @@
+Experiments 100 test summary
+{
+  "total": 100,
+  "avg_trace_length": 3.99,
+  "tool_calls": {
+    "GetClientProfile": 34,
+    "GetLiveStockPrice": 99
+  },
+  "client_found_rate": 0.34
+}
