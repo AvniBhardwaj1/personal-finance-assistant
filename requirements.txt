@@ -1,0 +1,11 @@
+langchain==1.2.15
+langchain-core==1.2.27
+langchain-ollama==1.1.0
+numpy==2.4.4
+pandas==3.0.2
+pydantic==2.12.5
+requests==2.33.1
+streamlit==1.56.0
+urllib3==2.6.3
+yfinance==1.2.1
+ollama

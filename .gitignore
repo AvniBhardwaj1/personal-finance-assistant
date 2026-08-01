@@ -1,0 +1,28 @@
+# Virtual environment
+venv/
+
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+
+# Large model files and datasets (do NOT commit large binaries into git). Use Git LFS or external storage.
+Llama3-Finance-Q4_K_M.gguf
+synthetic_personal_finance_dataset.csv
+
+# Logs
+*.log
+
+# Streamlit cache
+.streamlit/
+
+# Sensitive files
+.env
+
+# macOS folders
+*.DS_Store
