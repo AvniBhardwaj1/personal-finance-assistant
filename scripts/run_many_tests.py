@@ -79,19 +79,53 @@ def generate_prompts(df, count=100):
     return prompts
 
 
-def run(prompts):
-    tools = build_deterministic_tools()
-    mock = MockReActLLM(tools=tools)
+def run(prompts, use_real=False):
     rows = []
-    for p in prompts:
-        out = mock.run(p)
-        rows.append(out)
+    if use_real:
+        # try to import real agent executor from app
+        try:
+            # Ensure project root on path
+            import sys
+            ROOT = Path(__file__).resolve().parents[1]
+            if str(ROOT) not in sys.path:
+                sys.path.insert(0, str(ROOT))
+            from app import agent_executor
+            real_available = agent_executor is not None
+        except Exception as e:
+            print('Real agent not available:', e)
+            real_available = False
+
+        if real_available:
+            for p in prompts:
+                try:
+                    res = agent_executor.invoke({"input": p})
+                    # res may be dict with output or string
+                    if isinstance(res, dict):
+                        out = {'prompt': p, 'final_answer': res.get('output') or str(res)}
+                    else:
+                        out = {'prompt': p, 'final_answer': str(res)}
+                except Exception as e:
+                    out = {'prompt': p, 'final_answer': f'Agent error: {e}'}
+                rows.append(out)
+        else:
+            # fallback to mock
+            tools = build_deterministic_tools()
+            mock = MockReActLLM(tools=tools)
+            for p in prompts:
+                out = mock.run(p)
+                rows.append(out)
+    else:
+        tools = build_deterministic_tools()
+        mock = MockReActLLM(tools=tools)
+        for p in prompts:
+            out = mock.run(p)
+            rows.append(out)
+
     # write JSONL
     with open(OUT, 'w') as f:
         for r in rows:
             f.write(json.dumps(r) + '\n')
     return rows
-
 
 def summarize(rows):
     total = len(rows)
