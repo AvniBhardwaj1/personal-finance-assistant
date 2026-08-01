@@ -1,0 +1,51 @@
+name: Run experiments and export notebook
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  experiments:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.14'
+
+      - name: Install system packages (pandoc, TeX for PDF export)
+        run: |
+          sudo apt-get update && sudo apt-get install -y pandoc texlive-xetex texlive-fonts-recommended texlive-latex-recommended
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install jupyter nbconvert
+
+      - name: Run experiments (mock)
+        run: |
+          python3 scripts/run_experiments.py --mock
+
+      - name: Convert notebook to HTML
+        run: |
+          jupyter nbconvert --to html notebooks/experiments.ipynb --output experiments.html
+
+      - name: Convert notebook to PDF (best effort)
+        continue-on-error: true
+        run: |
+          jupyter nbconvert --to pdf notebooks/experiments.ipynb --output experiments.pdf || true
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: experiments-artifacts
+          path: |
+            logs/experiments.jsonl
+            experiments.html
+            experiments.pdf
+            notebooks/experiments.ipynb
